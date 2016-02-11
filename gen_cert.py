@@ -375,6 +375,7 @@ class CertificateGen(object):
             'stanford': self._generate_stanford_SOA,
             '3_dynamic': self._generate_v3_dynamic_certificate,
             'stanford_cme': self._generate_stanford_cme_certificate,
+            'npoed': self._generate_npoed_certificate,
         }
         # TODO: we should be taking args, kwargs, and passing those on to our callees
         return versionmap[self.template_version](
@@ -631,6 +632,203 @@ class CertificateGen(object):
         # Merge the overlay with the template, then write it to file
         output = PdfFileWriter()
         overlay = PdfFileReader(overlay_pdf_buffer)
+
+        # We need a page to overlay on.
+        # So that we don't have to open the template
+        # several times, we open a blank pdf several times instead
+        # (much faster)
+        final_certificate = copy.copy(BLANK_PDFS['landscape-A4']).getPage(0)
+        final_certificate.mergePage(self.template_pdf.getPage(0))
+        final_certificate.mergePage(overlay.getPage(0))
+
+        output.addPage(final_certificate)
+
+        self._ensure_dir(filename)
+
+        outputStream = file(filename, "wb")
+        output.write(outputStream)
+        outputStream.close()
+
+        self._generate_verification_page(
+            student_name,
+            filename,
+            verify_dir,
+            verify_uuid,
+            download_url
+        )
+
+        return (download_uuid, verify_uuid, download_url)
+
+    def _generate_npoed_certificate(
+        self,
+        student_name,
+        download_dir,
+        verify_dir,
+        filename=TARGET_FILENAME,
+        grade=None,
+        designation=None,
+    ):
+        # A4 page size is 297mm x 210mm
+
+        verify_uuid = uuid.uuid4().hex
+        download_uuid = uuid.uuid4().hex
+        download_url = "{base_url}/{cert}/{uuid}/{file}".format(
+            base_url=settings.CERT_DOWNLOAD_URL,
+            cert=S3_CERT_PATH, uuid=download_uuid, file=filename)
+        filename = os.path.join(download_dir, download_uuid, filename)
+
+        # This file is overlaid on the template certificate
+        overlay_pdf_buffer = StringIO.StringIO()
+        c = canvas.Canvas(overlay_pdf_buffer, pagesize=landscape(A4))
+
+        stylePFBeauSansProLight = ParagraphStyle(name="pfbeausanspro-light", leading=10, fontName='PFBeauSansPro-Light')
+        stylePFBeauSansProBold = ParagraphStyle(name="pfbeausanspro-bold", leading=10, fontName='PFBeauSansPro-Bold')
+        stylePFBeauSansPro = ParagraphStyle(name="pfbeausanspro-regular", leading=10, fontName='PFBeauSansPro-Regular')
+
+        # Text is overlayed top to bottom
+        #   * "This is to certify that"
+        #   * Student's name
+        #   * "successfully completed"
+        #   * Course name
+        #   * "a course of study.."
+        #   * honor code url at the bottom
+
+        WIDTH = 297  # width in mm (A4)
+        HEIGHT = 210  # hight in mm (A4)
+
+        LEFT_INDENT = 19  # mm from the left side to write the text
+        RIGHT_INDENT = 49  # mm from the right side for the CERTIFICATE
+
+        # This is to certify..
+
+        stylePFBeauSansProLight.fontSize = 28
+        stylePFBeauSansProLight.leading = 10
+        stylePFBeauSansProLight.textColor = colors.Color(
+            0.414, 0.417, 0.437)
+        stylePFBeauSansProLight.alignment = TA_LEFT
+
+        paragraph_string = u"СЕРТИФИКАТ"
+        paragraph = Paragraph(paragraph_string, stylePFBeauSansProLight)
+        paragraph.wrapOn(c, WIDTH * mm, HEIGHT * mm)
+        paragraph.drawOn(c, LEFT_INDENT * mm, 142.5 * mm)
+
+        stylePFBeauSansProLight.fontSize = 14
+        stylePFBeauSansProLight.leading = 10
+        stylePFBeauSansProLight.textColor = colors.Color(
+            0.414, 0.417, 0.437)
+        stylePFBeauSansProLight.alignment = TA_LEFT
+
+        paragraph_string = u"подверждает, что"
+        paragraph = Paragraph(paragraph_string, stylePFBeauSansProLight)
+        paragraph.wrapOn(c, WIDTH * mm, HEIGHT * mm)
+        paragraph.drawOn(c, LEFT_INDENT * mm + 63*mm, 137.5 * mm)
+
+        #  Student name
+
+        # default is to use the DejaVu font for the name,
+        # will fall back to Arial if there are
+        # unusual characters
+        style = stylePFBeauSansProBold
+        style.leading = 10
+        width = stringWidth(student_name.decode('utf-8'), 'PFBeauSansPro-Bold', 38) / mm
+        paragraph_string = "<b>{0}</b>".format(student_name)
+
+        if self._use_unicode_font(student_name):
+            style = stylePFBeauSansPro
+            width = stringWidth(student_name.decode('utf-8'), 'PFBeauSansPro-Bold', 38) / mm
+            paragraph_string = "{0}".format(student_name)
+
+        # We will wrap at 200mm in, so if we reach the end (200-47)
+        # decrease the font size
+        if width > 153:
+            style.fontSize = 18
+            nameYOffset = 121.5
+        else:
+            style.fontSize = 34
+            nameYOffset = 124.5
+
+        style.textColor = colors.Color(
+            0, 0, 0)
+        style.alignment = TA_LEFT
+
+        paragraph = Paragraph(paragraph_string, style)
+        paragraph.wrapOn(c, 200 * mm, 214 * mm)
+        paragraph.drawOn(c, LEFT_INDENT * mm, nameYOffset * mm)
+
+        # Successfully completed
+
+        stylePFBeauSansProLight.fontSize = 12
+        stylePFBeauSansProLight.leading = 10
+        stylePFBeauSansProLight.textColor = colors.Color(
+            0.414, 0.417, 0.437)
+        stylePFBeauSansProLight.alignment = TA_LEFT
+
+        paragraph_string = u"успешно завершил(а) онлайн-курс {0}".format(self.long_org.decode('utf-8'))
+        paragraph = Paragraph(paragraph_string, stylePFBeauSansProLight)
+
+        paragraph.wrapOn(c, WIDTH * mm, HEIGHT * mm)
+        paragraph.drawOn(c, LEFT_INDENT * mm, 103 * mm)
+
+        # Course name
+
+        stylePFBeauSansPro.fontSize = 29
+        stylePFBeauSansPro.leading = 10
+        stylePFBeauSansPro.textColor = colors.Color(
+            0, 0, 0)
+        stylePFBeauSansPro.alignment = TA_LEFT
+
+        paragraph_string = self.long_course.decode('utf-8').upper()
+        paragraph = Paragraph(paragraph_string, stylePFBeauSansPro)
+        paragraph.wrapOn(c, WIDTH * mm, HEIGHT * mm)
+        paragraph.drawOn(c, LEFT_INDENT * mm, 93 * mm)
+
+        # A course of study..
+
+        stylePFBeauSansProLight.fontSize = 14
+        stylePFBeauSansProLight.textColor = colors.Color(
+            0.414, 0.417, 0.437)
+        stylePFBeauSansProLight.alignment = TA_LEFT
+
+        paragraph_string = u"сертфикат выдан {0}".format(self.issued_date.decode('utf-8'))
+
+        paragraph = Paragraph(paragraph_string, stylePFBeauSansProLight)
+        paragraph.wrapOn(c, WIDTH * mm, HEIGHT * mm)
+        paragraph.drawOn(c, LEFT_INDENT * mm, 78 * mm)
+
+        paragraph_string = u"Описание курса и системы оценивания приведено по ссылке:"
+
+        paragraph = Paragraph(paragraph_string, stylePFBeauSansProLight)
+        paragraph.wrapOn(c, WIDTH * mm, HEIGHT * mm)
+        paragraph.drawOn(c, LEFT_INDENT * mm, 68 * mm)
+
+        paragraph_string = u"https://openedu.ru/course/{0}".format(self.course)
+
+        paragraph = Paragraph(paragraph_string, stylePFBeauSansProLight)
+        paragraph.wrapOn(c, WIDTH * mm, HEIGHT * mm)
+        paragraph.drawOn(c, LEFT_INDENT * mm, 63 * mm)
+
+
+        # Honor code
+
+        stylePFBeauSansProLight.fontSize = 11
+        stylePFBeauSansProLight.leading = 10
+        stylePFBeauSansProLight.textColor = colors.Color(
+            0.414, 0.417, 0.437)
+        stylePFBeauSansProLight.alignment = TA_LEFT
+
+        paragraph_string = u"ПОЖАЛУЙСТА, ОБРАТИТЕ ВНИМАНИЕ: СЕРТИФИКАТ НЕ ПОДТВЕРЖДАЕТ ПОЛУЧЕННУЮ СТУДЕНТОМ ОЦЕНКУ И НЕ ПРЕДПОЛАГАЕТ <br/> ПОЛУЧЕНИЕ КРЕДИТОВ (ЗАЧЕТНЫХ ЕДИНИЦ) ИЛИ ДИПЛОМА ОТ {0}. ДАННЫЙ СЕРТИФИКАТ СГЕНЕРИРОВАН В АВТОМАТИЧЕСКОМ РЕЖИМЕ <br/> НА НАЦИОНАЛЬНОЙ ПЛАТФОРМЕ ОТКРЫТОГО ОБРАЗОВАНИЯ БЕЗ ИДЕНТИФИКАЦИИ И ПОДТВЕРЖДЕНИЯ ЛИЧНОСТИ СТУДЕНТА.".format(self.long_org.decode('utf-8'))
+
+        paragraph = Paragraph(paragraph_string, stylePFBeauSansProLight)
+
+        paragraph.wrapOn(c, WIDTH * mm, HEIGHT * mm)
+        paragraph.drawOn(c, LEFT_INDENT * mm, 28 * mm)
+
+        c.showPage()
+        c.save()
+
+        # Merge the overlay with the template, then write it to file
+        output = PdfFileWriter()
+        overlay = PdfFileReader(overlay_pdf_buffer, strict=False)
 
         # We need a page to overlay on.
         # So that we don't have to open the template

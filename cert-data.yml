@@ -19,3 +19,9 @@ course-v1:edX+DemoX_v3+Demo_Course_v3:
   interstitial:
     Pass: 'This person passed.'
     Distinction: 'This person is a complete overachiever!'
+
+course-v1:mipt+TESTCERT1+winter_2016:
+  ISSUED_DATE: 30.11.2015
+  VERSION: npoed
+  LONG_COURSE: Архитектурные Конструкции
+  LONG_ORG: МФТИ
