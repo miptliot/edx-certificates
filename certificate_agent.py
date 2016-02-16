@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from argparse import ArgumentParser, RawTextHelpFormatter
 import logging.config
 import json
@@ -86,7 +88,7 @@ def main():
             action = xqueue_body['action']
             username = xqueue_body['username']
             course_id = xqueue_body['course_id']
-            course_name = xqueue_body['course_name']
+            #course_name = xqueue_body['course_name']
             name = xqueue_body['name']
             template_pdf = xqueue_body.get('template_pdf', None)
             grade = xqueue_body.get('grade', None)
@@ -98,7 +100,7 @@ def main():
                     template_pdf,
                     aws_id=args.aws_id,
                     aws_key=args.aws_key,
-                    long_course=course_name.encode('utf-8'),
+                    #long_course=course_name.encode('utf-8'),
                     issued_date=issued_date,
                 )
                 last_course = course_id

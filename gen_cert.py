@@ -729,30 +729,29 @@ class CertificateGen(object):
         # will fall back to Arial if there are
         # unusual characters
         style = stylePFBeauSansProBold
-        style.leading = 10
-        width = stringWidth(student_name.decode('utf-8'), 'PFBeauSansPro-Bold', 38) / mm
-        paragraph_string = "<b>{0}</b>".format(student_name)
+        style.leading = 26
+        width = stringWidth(student_name.decode('utf-8'), 'PFBeauSansPro-Bold', 34) / mm
+        paragraph_string = u"<b>{0}</b>".format(student_name.decode('utf-8'))
 
-        if self._use_unicode_font(student_name):
-            style = stylePFBeauSansPro
-            width = stringWidth(student_name.decode('utf-8'), 'PFBeauSansPro-Bold', 38) / mm
-            paragraph_string = "{0}".format(student_name)
+        #if self._use_unicode_font(student_name):
+        #    width = stringWidth(student_name, 'PFBeauSansPro-Bold', 34) / mm
+        #    paragraph_string = u"{0}".format(student_name)
 
         # We will wrap at 200mm in, so if we reach the end (200-47)
         # decrease the font size
-        if width > 153:
-            style.fontSize = 18
-            nameYOffset = 121.5
+        if width > WIDTH - 2*LEFT_INDENT - 50:
+            style.fontSize = 24
+            nameYOffset = 115.5
         else:
             style.fontSize = 34
-            nameYOffset = 124.5
+            nameYOffset = 121.5
 
         style.textColor = colors.Color(
             0, 0, 0)
         style.alignment = TA_LEFT
 
         paragraph = Paragraph(paragraph_string, style)
-        paragraph.wrapOn(c, 200 * mm, 214 * mm)
+        paragraph.wrapOn(c, (WIDTH-2*LEFT_INDENT) * mm, 214 * mm)
         paragraph.drawOn(c, LEFT_INDENT * mm, nameYOffset * mm)
 
         # Successfully completed
@@ -771,16 +770,22 @@ class CertificateGen(object):
 
         # Course name
 
-        stylePFBeauSansPro.fontSize = 29
-        stylePFBeauSansPro.leading = 10
-        stylePFBeauSansPro.textColor = colors.Color(
-            0, 0, 0)
-        stylePFBeauSansPro.alignment = TA_LEFT
+        style = stylePFBeauSansPro
+        style.leading = 16
+        style.textColor = colors.Color(0, 0, 0)
+        style.alignment = TA_LEFT
 
         paragraph_string = self.long_course.decode('utf-8').upper()
-        paragraph = Paragraph(paragraph_string, stylePFBeauSansPro)
-        paragraph.wrapOn(c, WIDTH * mm, HEIGHT * mm)
-        paragraph.drawOn(c, LEFT_INDENT * mm, 93 * mm)
+        width = stringWidth(paragraph_string, 'PFBeauSansPro-Regular', 29) / mm
+        if width > 153:
+            style.fontSize = 16
+            YOffset = 88
+        else:
+            style.fontSize = 29
+            YOffset = 93
+        paragraph = Paragraph(paragraph_string, style)
+        paragraph.wrapOn(c, 200 * mm, 214 * mm)
+        paragraph.drawOn(c, LEFT_INDENT * mm, YOffset * mm)
 
         # A course of study..
 
@@ -811,7 +816,7 @@ class CertificateGen(object):
         # Honor code
 
         stylePFBeauSansProLight.fontSize = 11
-        stylePFBeauSansProLight.leading = 10
+        stylePFBeauSansProLight.leading = 12
         stylePFBeauSansProLight.textColor = colors.Color(
             0.414, 0.417, 0.437)
         stylePFBeauSansProLight.alignment = TA_LEFT
