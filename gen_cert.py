@@ -226,6 +226,7 @@ class CertificateGen(object):
 
         # lookup long names from the course_id
         try:
+            self.org_code = cert_data.get('ORG_CODE', '')
             self.long_org = long_org or cert_data.get('LONG_ORG', '').encode('utf-8') or settings.DEFAULT_ORG
             self.long_course = long_course or cert_data.get('LONG_COURSE', '').encode('utf-8')
             self.issued_date = issued_date or cert_data.get('ISSUED_DATE', '').encode('utf-8') or 'ROLLING'
@@ -718,7 +719,7 @@ class CertificateGen(object):
             0.414, 0.417, 0.437)
         stylePFBeauSansProLight.alignment = TA_LEFT
 
-        paragraph_string = u"подверждает, что"
+        paragraph_string = u"подтверждает, что"
         paragraph = Paragraph(paragraph_string, stylePFBeauSansProLight)
         paragraph.wrapOn(c, WIDTH * mm, HEIGHT * mm)
         paragraph.drawOn(c, LEFT_INDENT * mm + 63*mm, 137.5 * mm)
@@ -794,7 +795,7 @@ class CertificateGen(object):
             0.414, 0.417, 0.437)
         stylePFBeauSansProLight.alignment = TA_LEFT
 
-        paragraph_string = u"сертфикат выдан {0}".format(self.issued_date.decode('utf-8'))
+        paragraph_string = u"сертификат выдан {0}".format(self.issued_date.decode('utf-8'))
 
         paragraph = Paragraph(paragraph_string, stylePFBeauSansProLight)
         paragraph.wrapOn(c, WIDTH * mm, HEIGHT * mm)
@@ -806,7 +807,7 @@ class CertificateGen(object):
         paragraph.wrapOn(c, WIDTH * mm, HEIGHT * mm)
         paragraph.drawOn(c, LEFT_INDENT * mm, 68 * mm)
 
-        paragraph_string = u"https://openedu.ru/course/{0}".format(self.course)
+        paragraph_string = u"https://openedu.ru/course/{0}/{1}".format(self.org_code, self.course)
 
         paragraph = Paragraph(paragraph_string, stylePFBeauSansProLight)
         paragraph.wrapOn(c, WIDTH * mm, HEIGHT * mm)

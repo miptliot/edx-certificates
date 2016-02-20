@@ -91,7 +91,7 @@ def main():
             #course_name = xqueue_body['course_name']
             name = xqueue_body['name']
             template_pdf = xqueue_body.get('template_pdf', None)
-            grade = xqueue_body.get('grade', None)
+            grade = xqueue_body.get('grade', "")
             issued_date = xqueue_body.get('issued_date', None)
             designation = xqueue_body.get('designation', None)
             if last_course != course_id:
@@ -124,12 +124,12 @@ def main():
                     username=username.encode('utf-8'),
                     name=name.encode('utf-8'),
                     course_id=course_id.encode('utf-8'),
-                    grade=grade,
+                    grade=grade.encode('utf-8'),
                 )
             )
             (download_uuid,
              verify_uuid,
-             download_url) = cert.create_and_upload(name.encode('utf-8'), grade=grade, designation=designation)
+             download_url) = cert.create_and_upload(name.encode('utf-8'), grade=grade.encode('utf-8'), designation=designation)
 
         except Exception as e:
             # global exception handler, if anything goes wrong

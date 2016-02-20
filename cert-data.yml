@@ -37,3 +37,17 @@ course-v1:mipt+TESTGAMETH+fall_2015:
   VERSION: npoed
   LONG_COURSE: TESTGAMETH (from yaml)
   LONG_ORG: МФТИ
+
+course-v1:mipt+INTPAYMENT+winter_2016:
+  ISSUED_DATE: 17.02.2016
+  VERSION: npoed
+  LONG_COURSE: ПЛАТЕЖИ В ИНТЕРНЕТЕ. ТЕОРИЯ и ОСНОВЫ ПРАКТИК
+  LONG_ORG: НПОЕД
+  ORG_CODE: mipt
+
+course-v1:mipt+GAMETH+fall_2015:
+  ISSUED_DATE: 17.02.2016
+  VERSION: npoed
+  LONG_COURSE: ТЕОРИЯ ИГР
+  LONG_ORG: МФТИ
+  ORG_CODE: mipt
