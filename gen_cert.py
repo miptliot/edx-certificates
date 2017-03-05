@@ -319,7 +319,13 @@ class CertificateGen(object):
         my_certs_path = os.path.join(certificates_path, download_uuid)
         my_verify_path = os.path.join(verify_path, verify_uuid)
         if upload:
-            s3_conn = boto.connect_s3(settings.CERT_AWS_ID, settings.CERT_AWS_KEY)
+            args = {}
+            if settings.CERT_AWS_BUCKET_IN_PATH:
+                from boto.s3.connection import OrdinaryCallingFormat
+                args['calling_format'] = OrdinaryCallingFormat()
+            if settings.CERT_AWS_HOST:
+                args['host'] = settings.CERT_AWS_HOST
+            s3_conn = boto.connect_s3(settings.CERT_AWS_ID, settings.CERT_AWS_KEY, **args)
             bucket = s3_conn.get_bucket(BUCKET)
         if upload or copy_to_webroot:
             for subtree in (my_certs_path, my_verify_path):
